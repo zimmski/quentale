@@ -2,7 +2,14 @@ package main
 
 import (
 	"fmt"
+	"github.com/hawx/img/greyscale"
+	"github.com/hawx/img/sharpen"
+	"image"
 	"os"
+
+	_ "image/gif"
+	_ "image/jpeg"
+	"image/png"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/otiai10/gosseract"
@@ -14,7 +21,8 @@ const (
 )
 
 var opts struct {
-	File string `short:"f" long:"file" description:"File that should be OCRed" required:"true"`
+	File             string `short:"f" long:"file" description:"File that should be OCRed" required:"true"`
+	PreprocessingOut string `long:"preprocessing-out" description:"Save the image afert preprocessing"`
 }
 
 func main() {
@@ -35,6 +43,33 @@ func main() {
 		}
 	}
 
+	// read file
+	reader, err := os.Open(opts.File)
+	if err != nil {
+		panic(err)
+	}
+	defer reader.Close()
+
+	img, _, err := image.Decode(reader)
+	if err != nil {
+		panic(err)
+	}
+
+	// preprocessing
+	img = greyscale.Maximal(img)
+	img = sharpen.Sharpen(img, 1, 0.5)
+
+	if opts.PreprocessingOut != "" {
+		imageOut, err := os.Create(opts.PreprocessingOut)
+		if err != nil {
+			panic(err)
+		}
+		defer imageOut.Close()
+
+		png.Encode(imageOut, img)
+	}
+
+	// ocr the heck out of the image
 	ocr := gosseract.SummonServant()
 
 	err = ocr.LangUse("deu")
@@ -42,13 +77,16 @@ func main() {
 		panic(err)
 	}
 
-	ocr.Target(opts.File)
+	ocr.Eat(img)
 
 	text, err := ocr.Out()
 	if err != nil {
 		panic(err)
 	}
 
+	// postprocessing
+
+	// output
 	fmt.Println(text)
 
 	os.Exit(ReturnOk)
