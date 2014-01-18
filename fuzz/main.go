@@ -15,6 +15,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"time"
 
 	_ "image/png"
 
@@ -90,6 +91,8 @@ func main() {
 		"sharpen",
 	}
 	om := make(map[string]struct{})
+
+	rand.Seed(time.Now().UnixNano())
 
 	for {
 		t := img
