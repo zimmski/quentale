@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/hawx/img/greyscale"
-	"github.com/hawx/img/sharpen"
 	"image"
 	"io/ioutil"
 	"os"
@@ -14,8 +12,8 @@ import (
 
 	termcolor "github.com/daviddengcn/go-colortext"
 	"github.com/jessevdk/go-flags"
-	"github.com/otiai10/gosseract"
 	diff "github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/zimmski/gosseract"
 )
 
 const (
@@ -66,8 +64,8 @@ func main() {
 	}
 
 	// preprocessing
-	img = greyscale.Maximal(img)
-	img = sharpen.Sharpen(img, 1, 0.5)
+	//img = greyscale.Maximal(img)
+	//img = sharpen.Sharpen(img, 1, 0.5)
 
 	if opts.PreprocessingOut != "" {
 		imageOut, err := os.Create(opts.PreprocessingOut)
