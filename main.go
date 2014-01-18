@@ -5,14 +5,17 @@ import (
 	"github.com/hawx/img/greyscale"
 	"github.com/hawx/img/sharpen"
 	"image"
+	"io/ioutil"
 	"os"
 
 	_ "image/gif"
 	_ "image/jpeg"
 	"image/png"
 
+	termcolor "github.com/daviddengcn/go-colortext"
 	"github.com/jessevdk/go-flags"
 	"github.com/otiai10/gosseract"
+	diff "github.com/sergi/go-diff/diffmatchpatch"
 )
 
 const (
@@ -20,7 +23,14 @@ const (
 	ReturnHelp
 )
 
+const (
+	DiffDelete = -1
+	DiffInsert = 1
+	DiffEqual  = 0
+)
+
 var opts struct {
+	ComparePerfect   string `long:"compare-perfect" description:"Compare the OCRed text with the content of a file"`
 	File             string `short:"f" long:"file" description:"File that should be OCRed" required:"true"`
 	PreprocessingOut string `long:"preprocessing-out" description:"Save the image afert preprocessing"`
 }
@@ -87,7 +97,35 @@ func main() {
 	// postprocessing
 
 	// output
-	fmt.Println(text)
+	if opts.ComparePerfect != "" {
+		errorCount := 0
+
+		by, err := ioutil.ReadFile(opts.ComparePerfect)
+		if err != nil {
+			panic(err)
+		}
+
+		perfect := string(by)
+
+		ds := diff.New().DiffMain(text, perfect, true)
+
+		for _, d := range ds {
+			switch d.Type {
+			case DiffDelete:
+				termcolor.ChangeColor(termcolor.Red, false, termcolor.None, false)
+				fmt.Print(d.Text)
+				termcolor.ResetColor()
+
+				errorCount += len(d.Text)
+			case DiffEqual:
+				fmt.Print(d.Text)
+			}
+		}
+
+		fmt.Printf("\nGot %d errors\n", errorCount)
+	} else {
+		fmt.Println(text)
+	}
 
 	os.Exit(ReturnOk)
 }
