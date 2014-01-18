@@ -17,7 +17,7 @@ import (
 	"os"
 	"time"
 
-	_ "image/png"
+	"image/png"
 
 	termcolor "github.com/daviddengcn/go-colortext"
 	"github.com/jessevdk/go-flags"
@@ -59,7 +59,15 @@ func main() {
 		}
 	}
 
-	// read file
+	// init ocr
+	ocr := gosseract.SummonServant()
+
+	err = ocr.LangUse("deu")
+	if err != nil {
+		panic(err)
+	}
+
+	// read image
 	reader, err := os.Open(opts.File)
 	if err != nil {
 		panic(err)
@@ -71,6 +79,7 @@ func main() {
 		panic(err)
 	}
 
+	// read perfect text
 	by, err := ioutil.ReadFile(opts.Text)
 	if err != nil {
 		panic(err)
@@ -78,6 +87,7 @@ func main() {
 
 	perfect := string(by)
 
+	// init fuzzing
 	best := math.MaxInt64
 	var filters = []string{
 		"blend",
@@ -152,13 +162,6 @@ func main() {
 		om[selectedFilters] = struct{}{}
 
 		// ocr the heck out of the image
-		ocr := gosseract.SummonServant()
-
-		err = ocr.LangUse("deu")
-		if err != nil {
-			panic(err)
-		}
-
 		ocr.Eat(t)
 
 		text, err := ocr.Out()
@@ -187,6 +190,14 @@ func main() {
 			termcolor.ChangeColor(termcolor.Green, false, termcolor.None, false)
 			fmt.Printf("%d;%s\n", errorCount, selectedFilters)
 			termcolor.ResetColor()
+
+			imageOut, err := os.Create(fmt.Sprintf("%d.png", errorCount))
+			if err != nil {
+				panic(err)
+			}
+			defer imageOut.Close()
+
+			png.Encode(imageOut, t)
 		} else {
 			fmt.Printf("%d;%s\n", errorCount, selectedFilters)
 		}
