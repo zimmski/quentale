@@ -21,7 +21,3 @@ _testmain.go
 
 *.exe
 
-# editors and IDEs
-
-quentale.sublime-project
-quentale.sublime-workspace
